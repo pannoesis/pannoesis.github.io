@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="How neural interpretation, ontologies, and evidence-backed inference turn plausible answers into supported claims.">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Neuro-Symbolic Agents: From Plausible Answers to Supported Claims">
+  <meta property="og:description" content="How neural interpretation, ontologies, and evidence-backed inference turn plausible answers into supported claims.">
+  <meta property="og:url" content="https://pannoesis.github.io/posts/neuro-symbolic-agents.html">
+  <title>Neuro-Symbolic Agents: From Plausible Answers to Supported Claims · Pannoesis</title>
+  <link rel="canonical" href="https://pannoesis.github.io/posts/neuro-symbolic-agents.html">
+  <link rel="stylesheet" href="../assets/style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+</head>
+<body>
+  <div class="site-shell">
+    <header class="site-header">
+      <a class="brand" href="../index.html" aria-label="Pannoesis home"><span class="brand-mark" aria-hidden="true">P</span><span>Pannoesis<span class="brand-dot">.</span></span></a>
+      <span class="header-label">Ideas &amp; engineering</span>
+    </header>
+    <main class="article-layout" id="main">
+      <a class="back-link" href="../index.html">← All writing</a>
+      <div class="article-kicker">Essay <span aria-hidden="true">/</span> AI systems</div>
+      <h1>Neuro-Symbolic Agents: From Plausible Answers to Supported Claims</h1>
+      <p class="article-deck">How neural interpretation, ontologies, and evidence-backed inference turn plausible answers into supported claims.</p>
+      <div class="article-meta"><span>By Pannoesis</span><span aria-hidden="true">·</span><time datetime="2026-09-25">25 September 2026</time></div>
+      <div class="article-rule"></div>
+      <article class="prose"><p><em>Combining neural interpretation, ontologies, and evidence-backed inference.</em></p>
+<p>An agent tells you: “Abebe has a defaulted loan.”</p>
+<p>The sentence sounds reasonable. But did the agent understand which Abebe you meant? Does its interpretation fit your domain? And does a record actually support the claim?</p>
+<p>These are three different questions. A useful architecture should not collapse them into one confidence score.</p>
+<p><strong>Neuro-symbolic inference separates the work: a neural model interprets language, while symbolic components check structure and derive conclusions.</strong> Systems such as Logic-LM demonstrate this division by translating natural-language problems into formal representations for symbolic solvers. [1]</p>
+<p>Here is a compact framework for applying that idea to an ontology-grounded agent.</p>
+<h2>1. Turn language into a structured question</h2>
+<p>Suppose a user asks:</p>
+<blockquote>
+<p>Does Abebe have a defaulted loan?</p>
+</blockquote>
+<p>A neural model maps the input <span class="inline-equation">\(x\)</span> into a representation <span class="inline-equation">\(h\)</span>, then proposes a symbolic interpretation <span class="inline-equation">\(z\)</span>:</p>
+<div class="equation">\[
+h = f_\theta(x),
+\qquad
+z \sim p_\theta(z \mid h, \mathcal O)
+\]</div>
+<p>Here, <span class="inline-equation">\(\theta\)</span> denotes model parameters and <span class="inline-equation">\(\mathcal O\)</span> is the ontology. This is a conceptual decomposition, not a requirement for separate encoder and parser models.</p>
+<p>Assuming entity resolution identifies Abebe as <code>customer_17</code>, the interpretation could be:</p>
+<pre><code class="language-text">EXISTS loan:
+    hasLoan(customer_17, loan)
+    AND DefaultedLoan(loan)
+</code></pre>
+<p>Notice what the model has produced: <strong>a question to execute, not a fact to believe.</strong></p>
+<p>This is an operational meaning of “understanding”: mapping an input to an explicit, testable interpretation. It does not establish human-like comprehension. If two customers match “Abebe,” the agent still needs to resolve that ambiguity.</p>
+<h2>2. Separate the ontology from the evidence</h2>
+<p>Let <span class="inline-equation">\(\mathcal O\)</span> contain domain concepts, relationships, and logical axioms. Let <span class="inline-equation">\(D\)</span> contain accepted facts retrieved from the relevant records. Their combination is the knowledge base:</p>
+<div class="equation">\[
+K = \mathcal O \cup D
+\]</div>
+<p>Ontologies can describe relationships and support deductions; they do not automatically establish that a particular real-world event occurred. [2]</p>
+<p>For our example, define the relationship signature:</p>
+<pre><code class="language-text">hasLoan: Customer × Loan
+</code></pre>
+<p>And two logical rules, with variables universally quantified:</p>
+<div class="equation">\[
+\begin{aligned}
+\operatorname{DefaultedLoan}(l)
+&amp;\Rightarrow \operatorname{Loan}(l) \\
+\operatorname{Customer}(c) \land \operatorname{hasLoan}(c,l)
+\land \operatorname{DefaultedLoan}(l)
+&amp;\Rightarrow \operatorname{HasDefaultedLoan}(c)
+\end{aligned}
+\]</div>
+<p>Now suppose the retrieved evidence contains:</p>
+<pre><code class="language-text">Customer(customer_17)
+hasLoan(customer_17, loan_42)
+DefaultedLoan(loan_42)
+DefaultedLoan(loan_99)
+</code></pre>
+<p>The rule derives <code>HasDefaultedLoan(customer_17)</code>. The answer can identify <code>loan_42</code> and attach the supporting record references.</p>
+<p>But <code>loan_99</code> being a defaulted loan does not establish that Abebe holds it. That claim is compatible with the ontology, yet no supplied fact links this customer to that loan.</p>
+<p><strong>Consistency asks whether a claim could fit the knowledge base. Entailment asks whether it follows from the knowledge base.</strong> They are not interchangeable. [2]</p>
+<h2>3. Make inference a constrained optimization problem</h2>
+<p>Let <span class="inline-equation">\(y\)</span> be a structured candidate answer, and let <span class="inline-equation">\(\operatorname{Claims}(y)\)</span> be its factual assertions. Define <span class="inline-equation">\(V(y)=1\)</span> when it passes explicitly implemented schema and type checks.</p>
+<p>Assuming <span class="inline-equation">\(K\)</span> is logically consistent, define the admissible answers:</p>
+<div class="equation">\[
+\mathcal Y_{\mathrm{adm}}
+=
+\left\{
+ y \in \mathcal Y
+ \;\middle|\;
+ V(y)=1
+ \;\land\;
+ \forall c \in \operatorname{Claims}(y),\; K \models c
+\right\}
+\]</div>
+<p>The notation <span class="inline-equation">\(K \models c\)</span> means that <span class="inline-equation">\(c\)</span> logically follows from <span class="inline-equation">\(K\)</span>. [2]</p>
+<p>Then choose:</p>
+<div class="equation">\[
+\boxed{
+y^*
+=
+\underset{y \in \mathcal Y_{\mathrm{adm}}}{\arg\max}
+\; p_\theta(y \mid x,K)
+}
+\]</div>
+<p>In plain English: <strong>choose the model’s preferred answer, but only among structurally valid, evidence-supported candidates.</strong></p>
+<p>Imagine two candidates receive hypothetical proposal probabilities:</p>
+<table>
+<thead>
+<tr>
+<th>Candidate answer</th>
+<th style="text-align:right">Neural probability</th>
+<th>Structurally valid?</th>
+<th>Supported by <span class="inline-equation">\(K\)</span>?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Abebe has defaulted loan <code>loan_99</code>.</td>
+<td style="text-align:right">0.65</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Abebe has defaulted loan <code>loan_42</code>.</td>
+<td style="text-align:right">0.35</td>
+<td>Yes</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+<p>Unconstrained selection prefers the first. The constrained system rejects it and selects the second.</p>
+<p>The numbers are illustrative, not measured confidence estimates. In practice, a system can generate and validate a finite candidate set rather than search every possible answer. If none qualify, it should retrieve more evidence or abstain.</p>
+<p><strong>Implementation matters:</strong> OWL domain and range axioms can infer types rather than reject malformed data. Use explicit validation—such as SHACL for RDF graphs—when rejection is required. Ontology axioms are not automatically database constraints. [2][3]</p>
+<h2>4. Combine soft preferences with hard boundaries</h2>
+<p>Not every preference needs an absolute rule. A system might prefer simpler interpretations while still requiring factual support.</p>
+<p>One illustrative formulation is:</p>
+<div class="equation">\[
+q(y \mid x,K)
+=
+\frac{1}{Z}
+\,p_\theta(y \mid x,K)
+\,e^{-\lambda S(y)}
+\,\mathbf 1[y \in \mathcal Y_{\mathrm{adm}}]
+\]</div>
+<p>Here, <span class="inline-equation">\(S(y)\geq 0\)</span> penalizes undesirable properties, <span class="inline-equation">\(\lambda\geq 0\)</span> controls that penalty, and <span class="inline-equation">\(Z\)</span> normalizes the distribution. If <span class="inline-equation">\(Z=0\)</span>, no supported proposal has positive probability: abstain or gather more evidence.</p>
+<p>The neural model ranks possibilities. The penalty adjusts preferences. The indicator enforces the boundary.</p>
+<p>This connects to the broader idea of constraining probabilistic models; posterior regularization is an established related framework, although its learning objective differs from this illustrative inference rule. [4]</p>
+<p>Importantly, <strong><span class="inline-equation">\(q\)</span> is a selection distribution, not a calibrated probability of real-world truth.</strong> Filtering candidates cannot turn unreliable evidence into certainty.</p>
+<h2>5. What the framework does—and does not—guarantee</h2>
+<p>With a sound checker, a consistent knowledge base, and complete enforcement, every accepted formal claim follows from the supplied premises. That is a meaningful but conditional guarantee.</p>
+<p>It does not guarantee that the records are correct, that “Abebe” was resolved correctly, or that the ontology captures the intended business meaning. A perfect deduction from a wrong premise can still produce a wrong answer.</p>
+<p>Missing evidence also does not prove the opposite. Under OWL’s open-world semantics, an absent fact may simply be unknown. “I found no defaulted loan in the available records” is different from “Abebe has no defaulted loans.” [2]</p>
+<p>Finally, the language-generation step must not add unverified details. For strict outputs, render validated claims through templates or check the final response against those claims. Keep source identifiers and timestamps with the evidence.</p>
+<p>A practical design is:</p>
+<pre><code class="language-text">User input → Neural interpretation → Query validation
+           → Evidence retrieval → Symbolic inference
+           → Claim validation → Faithful response
+</code></pre>
+<p>The goal is not to give an agent an ontology and declare it incapable of hallucination. It is to make unsupported assertions fail an explicit acceptance test.</p>
+<p><strong>Let the neural model propose what the input means. Let the ontology define its structure. Let the evidence determine what the agent may assert.</strong></p>
+<hr />
+<h2>References</h2>
+<p>[1] Pan et al. (2023). <a href="https://arxiv.org/abs/2305.12295">Logic-LM: Empowering Large Language Models with Symbolic Solvers for Faithful Logical Reasoning</a>.</p>
+<p>[2] W3C (2012). <a href="https://www.w3.org/TR/owl2-primer/">OWL 2 Web Ontology Language Primer, Second Edition</a>. See the discussions of entailment, open-world semantics, and domain/range axioms.</p>
+<p>[3] W3C (2017). <a href="https://www.w3.org/TR/shacl/">Shapes Constraint Language (SHACL)</a>.</p>
+<p>[4] Ganchev et al. (2010). <a href="https://www.jmlr.org/papers/v11/ganchev10a.html">Posterior Regularization for Structured Latent Variable Models</a>. <em>Journal of Machine Learning Research</em>, 11, 2001–2049.</p>
+</article>
+      <div class="article-end"><a href="../index.html">← Back to all writing</a></div>
+    </main>
+    <footer class="site-footer"><span>© 2026 Pannoesis</span><span>Thoughts on building systems that can show their work.</span></footer>
+  </div>
+</body>
+</html>
