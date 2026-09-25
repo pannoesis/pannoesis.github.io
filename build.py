@@ -31,12 +31,13 @@ def page(title: str, description: str, content: str, *, article: bool = False) -
   <title>{escape(title)} · Pannoesis</title>
   <link rel="canonical" href="{URL if article else 'https://pannoesis.github.io/'}">
   <link rel="stylesheet" href="{'../' if article else ''}assets/style.css">
+  <link rel="icon" type="image/png" href="{'../' if article else ''}assets/pannoesis-logo.png">
   {script}
 </head>
 <body>
   <div class="site-shell">
     <header class="site-header">
-      <a class="brand" href="{'../index.html' if article else 'index.html'}" aria-label="Pannoesis home"><span class="brand-mark" aria-hidden="true">P</span><span>Pannoesis<span class="brand-dot">.</span></span></a>
+      <a class="brand" href="{'../index.html' if article else 'index.html'}" aria-label="Pannoesis home"><span class="brand-mark"><img src="{'../' if article else ''}assets/pannoesis-logo.png" alt=""></span><span>Pannoesis<span class="brand-dot">.</span></span></a>
       <span class="header-label">Ideas &amp; engineering</span>
     </header>
     {content}
